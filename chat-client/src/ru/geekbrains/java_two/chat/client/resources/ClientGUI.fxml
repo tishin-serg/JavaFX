@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.geekbrains.java_two.chat.client.ControllerClientGUI">
+    <children>
+        <GridPane fx:id="topPanel" VBox.vgrow="NEVER">
+            <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                <RowConstraints maxHeight="31.0" minHeight="5.0" prefHeight="30.0" vgrow="SOMETIMES" />
+            </rowConstraints>
+            <children>
+                <TextField fx:id="tfIPAddress" focusTraversable="false" text="127.0.0.1">
+                    <GridPane.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </GridPane.margin>
+                </TextField>
+                <TextField fx:id="tfPort" focusTraversable="false" text="8189" GridPane.columnIndex="1">
+                    <GridPane.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </GridPane.margin>
+                </TextField>
+                <TextField fx:id="tfLogin" focusTraversable="false" text="Sergey" GridPane.rowIndex="1">
+                    <GridPane.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </GridPane.margin>
+                </TextField>
+                <PasswordField fx:id="tfPassword" focusTraversable="false" text="123" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                    <GridPane.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </GridPane.margin>
+                </PasswordField>
+                <CheckBox fx:id="cbAlwaysOnTop" focusTraversable="false" mnemonicParsing="false" onAction="#setAlwaysOnTop" text="Always on top" GridPane.columnIndex="2">
+                    <GridPane.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </GridPane.margin>
+                </CheckBox>
+            <HBox spacing="5.0" GridPane.columnIndex="2" GridPane.rowIndex="1">
+               <GridPane.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </GridPane.margin>
+               <children>
+                      <Button fx:id="btnLogin" focusTraversable="false" mnemonicParsing="false" onAction="#connect" prefHeight="27.0" prefWidth="118.0" text="Login" />
+                  <CheckBox fx:id="cbLoginAsGuest" focusTraversable="false" mnemonicParsing="false" text="As guest" textAlignment="CENTER">
+                     <padding>
+                        <Insets top="5.0" />
+                     </padding></CheckBox>
+               </children>
+            </HBox>
+            </children>
+        </GridPane>
+        <HBox alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
+            <children>
+                <VBox alignment="BOTTOM_CENTER" HBox.hgrow="ALWAYS">
+                    <children>
+                        <ScrollPane fitToHeight="true" fitToWidth="true" minViewportHeight="200.0" minViewportWidth="200.0" prefViewportHeight="200.0" prefViewportWidth="200.0" VBox.vgrow="ALWAYS">
+                            <content>
+                                <TextArea fx:id="taMessageLog" editable="false" focusTraversable="false" nodeOrientation="LEFT_TO_RIGHT" prefHeight="500.0" wrapText="true">
+                                    <padding>
+                                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                                    </padding>
+                           <font>
+                              <Font name="Arial" size="13.0" />
+                           </font>
+                                </TextArea>
+                            </content>
+                        </ScrollPane>
+                    </children>
+                </VBox>
+                <ScrollPane>
+                    <content>
+                        <ListView fx:id="userListView" focusTraversable="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="306.0" prefWidth="155.0">
+                            <padding>
+                                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                            </padding>
+                        </ListView>
+                    </content>
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                </ScrollPane>
+            </children>
+        </HBox>
+        <HBox fx:id="bottomPanel" alignment="BOTTOM_CENTER" prefHeight="31.0" prefWidth="626.0" visible="false" VBox.vgrow="SOMETIMES">
+            <children>
+                <Button fx:id="btnDisconnect" focusTraversable="false" mnemonicParsing="false" onAction="#disconnect" prefHeight="51.0" prefWidth="139.0" text="Disconnect">
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                    <HBox.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </HBox.margin>
+                </Button>
+                <TextField fx:id="tfMessage" focusTraversable="true" onKeyReleased="#sendMessageByEnter" prefHeight="27.0" prefWidth="432.0" HBox.hgrow="ALWAYS">
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                    <HBox.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </HBox.margin>
+                </TextField>
+                <Button fx:id="btnSend" focusTraversable="false" mnemonicParsing="false" onAction="#handle" prefHeight="51.0" prefWidth="139.0" text="Send">
+                    <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </padding>
+                    <HBox.margin>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                    </HBox.margin>
+                </Button>
+            </children>
+        </HBox>
+    </children>
+</VBox>
