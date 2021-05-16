@@ -24,6 +24,8 @@ public class Library {
     public static final String TYPE_BCAST_CLIENT = "/client_bcast";
     public static final String TYPE_PRIVATE_CLIENT = "/client_private";
     public static final String RECIPIENT_NOT_FOUND_ERROR = "/recipient_not_found_error";
+    public static final String LOGIN_AS_GUEST = "/login_as_guest";
+    public static final String DISCONNECT_ON_TIMEOUT = "/disconnect_on_timeout";
 
     public static String getAuthRequest(String login, String password) {
         return AUTH_REQUEST + DELIMITER + login + DELIMITER + password;
@@ -59,5 +61,13 @@ public class Library {
 
     public static String getRecipientNotFoundError(String recipient) {
         return RECIPIENT_NOT_FOUND_ERROR + DELIMITER + recipient;
+    }
+
+    public static String getLoginAsGuest() {
+        return LOGIN_AS_GUEST + DELIMITER;
+    }
+
+    public static String getDisconnectOnTimeout() {
+        return DISCONNECT_ON_TIMEOUT + DELIMITER + System.currentTimeMillis();
     }
 }

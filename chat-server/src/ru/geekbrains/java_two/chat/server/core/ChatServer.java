@@ -17,6 +17,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     private final ChatServerListener chatServerListener;
     private final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
     private final Vector<SocketThread> clients;
+    private final long disconnectTimeOut = 120_000;
 
     private ServerSocketThread thread;
 
@@ -78,8 +79,8 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                 String recipient = msgForSplit[3];
                 String message = msgForSplit[4];
                 String sender = client.getNickname();
-                sendToPerson(Library.getTypePrivateClient(sender, recipient, message), client , recipient); // отправка получателю
-            break;
+                sendToPerson(Library.getTypePrivateClient(sender, recipient, message), client, recipient); // отправка получателю
+                break;
             default:
                 client.msgFormatError(msg);
         }
@@ -87,35 +88,42 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     private void handleNonAuthMessage(ClientThread client, String msg) {
         String[] arr = msg.split(Library.DELIMITER);
-        if (arr.length != 3 || !arr[0].equals(Library.AUTH_REQUEST)) {
-            client.msgFormatError(msg);
-            return;
-        }
-        String login = arr[1];
-        String password = arr[2];
-        String nickname = SqlClient.getNickname(login, password);
-        if (nickname == null) {
-            putLog("Invalid login attempt: " + login);
-            client.authFail();
-            return;
-        } else {
-            ClientThread oldClient = findClientByNickname(nickname);
-            client.authAccept(nickname);
-            if (oldClient == null) {
-                sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", nickname + " connected"));
-            } else {
-                oldClient.reconnect();
-                clients.remove(oldClient);
-            }
+        String prefix = arr[0];
+        switch (prefix) {
+            case Library.AUTH_REQUEST:
+                String login = arr[1];
+                String password = arr[2];
+                String nickname = SqlClient.getNickname(login, password);
+                if (nickname == null) {
+                    putLog("Invalid login attempt: " + login);
+                    client.authFail();
+                    return;
+                } else {
+                    ClientThread oldClient = findClientByNickname(nickname);
+                    client.authAccept(nickname);
+                    if (oldClient == null) {
+                        sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", nickname + " connected"));
+                    } else {
+                        oldClient.reconnect();
+                        clients.remove(oldClient);
+                    }
+                }
+                break;
+            case Library.LOGIN_AS_GUEST:
+                client.loginAsGuest();
+                break;
+            default:
+                client.msgFormatError(msg);
         }
         sendToAllAuthorizedClients(Library.getUserList(getUsers()));
     }
 
     private void sendToAllAuthorizedClients(String msg) {
         for (int i = 0; i < clients.size(); i++) {
-            ClientThread recipient = (ClientThread) clients.get(i); // приводим каждый тред из вектора к клиент треду
-            if (!recipient.isAuthorized()) continue;                       // если не авторизован переходим на след итерацию
-            recipient.sendMessage(msg); // если авторизован то отправляем всем авторизованным
+            ClientThread recipient = (ClientThread) clients.get(i);
+            if (recipient.isAuthorized() || recipient.isLoginAsGuest()) {
+                recipient.sendMessage(msg);
+            }
         }
     }
 
@@ -159,7 +167,21 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     @Override
     public void onServerTimeout(ServerSocketThread thread, ServerSocket server) {
+        checkAuthorizationTimeout();
+    }
 
+    private void checkAuthorizationTimeout() {
+        for (int i = 0; i < clients.size(); i++) {
+            ClientThread client = (ClientThread) clients.get(i);
+            if (!client.isAuthorized()) {
+                long timeOut = System.currentTimeMillis() - client.getTimeAfterThreadStarted();
+                if (timeOut >= disconnectTimeOut) {
+                    client.sendMessage(Library.getDisconnectOnTimeout());
+                    clients.remove(client);
+                    client.close();
+                }
+            }
+        }
     }
 
     @Override

@@ -44,6 +44,8 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
     @FXML
     private CheckBox cbAlwaysOnTop;
     @FXML
+    private CheckBox cbLoginAsGuest;
+    @FXML
     private TextField tfMessage;
     @FXML
     private TextArea taMessageLog;
@@ -155,11 +157,16 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
 
     @Override
     public void onSocketReady(SocketThread thread, Socket socket) {
-        topPanel.setVisible(false);
-        bottomPanel.setVisible(true);
         String login = tfLogin.getText();
         String password = tfPassword.getText();
-        thread.sendMessage(Library.getAuthRequest(login, password)); // запрос авторизации на сервер
+        topPanel.setVisible(false);
+        bottomPanel.setVisible(true);
+        if (!cbLoginAsGuest.isSelected()) {
+            thread.sendMessage(Library.getAuthRequest(login, password)); // запрос авторизации на сервер
+        } else {
+            thread.sendMessage(Library.getLoginAsGuest());
+            tfMessage.setEditable(false);
+        }
     }
 
     @Override
@@ -206,7 +213,15 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
                 break;
             case Library.RECIPIENT_NOT_FOUND_ERROR:
                 msg = msg.substring(Library.RECIPIENT_NOT_FOUND_ERROR.length() + Library.DELIMITER.length());
-                putLog("Recipient " + msg + " was not found" );
+                putLog("Recipient " + msg + " was not found");
+                break;
+            case Library.DISCONNECT_ON_TIMEOUT:
+                putLog(DATE_FORMAT.format(Long.parseLong(msgForSplit[1])) + " You have been disconnected after " +
+                        "120 s timeout authorization");
+                break;
+            case Library.LOGIN_AS_GUEST:
+                putLog(DATE_FORMAT.format(System.currentTimeMillis()) + " Welcome! You connected as a guest. " +
+                        "Please reconnect with login and password or you will be disconnected after timeout 120 s ");
                 break;
             default:
                 throw new RuntimeException("Unknown message type: " + msg);
@@ -218,9 +233,9 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
         selectionModel.selectedItemProperty().addListener(new ChangeListener<String>() {
             @Override
             public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
-                String prefix = "/client_private " + t1 + " ";
+                String prefix = "/client_private ";
                 if (!t1.equals(nickname) && !tfMessage.getText().startsWith(prefix)) {
-                    tfMessage.insertText(0, prefix);
+                    tfMessage.insertText(0, prefix + t1 + " ");
                 }
             }
         });
