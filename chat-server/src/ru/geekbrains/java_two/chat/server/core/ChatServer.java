@@ -68,7 +68,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     // работа с сообщениями
 
     private void handleAuthMessage(ClientThread client, String msg) {
-
         String[] msgForSplit = msg.split(Library.DELIMITER);
         String prefix = msgForSplit[0];
         switch (prefix) {
@@ -76,15 +75,14 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                 sendToAllAuthorizedClients(Library.getTypeBroadcast(client.getNickname(), msgForSplit[1]));
                 break;
             case Library.TYPE_PRIVATE_CLIENT:
-                String recipient = msgForSplit[1];
-                sendToPerson(Library.getTypePrivateClient(recipient, msg), recipient); // отправка получателю
-                sendToPerson(Library.getTypePrivateClient(client.getNickname(), msg), client.getNickname()); // отправка
-                // отправителю
+                String recipient = msgForSplit[3];
+                String message = msgForSplit[4];
+                String sender = client.getNickname();
+                sendToPerson(Library.getTypePrivateClient(sender, recipient, message), client , recipient); // отправка получателю
             break;
             default:
                 client.msgFormatError(msg);
         }
-
     }
 
     private void handleNonAuthMessage(ClientThread client, String msg) {
@@ -111,7 +109,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             }
         }
         sendToAllAuthorizedClients(Library.getUserList(getUsers()));
-
     }
 
     private void sendToAllAuthorizedClients(String msg) {
@@ -122,13 +119,15 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         }
     }
 
-    private void sendToPerson(String msg, String nickname) {
-        for (int i = 0; i < clients.size(); i++) {
-            ClientThread recipient = (ClientThread) clients.get(i);
-            if (recipient.isAuthorized() && recipient.getNickname().equals(nickname)) {
-                recipient.sendMessage(msg);
-            } // в else допилить что будет, если нет такого ника
+    private void sendToPerson(String msg, ClientThread sender, String recipientNickname) {
+        ClientThread recipient = findClientByNickname(recipientNickname);
+        if (recipient == null) {
+            sender.sendMessage(Library.getRecipientNotFoundError(recipientNickname));
+        } else {
+            recipient.sendMessage(msg);
+            sender.sendMessage(msg);
         }
+
     }
 
     private String getUsers() {

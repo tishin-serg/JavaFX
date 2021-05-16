@@ -23,6 +23,7 @@ public class Library {
     public static final String USER_LIST = "/user_list";
     public static final String TYPE_BCAST_CLIENT = "/client_bcast";
     public static final String TYPE_PRIVATE_CLIENT = "/client_private";
+    public static final String RECIPIENT_NOT_FOUND_ERROR = "/recipient_not_found_error";
 
     public static String getAuthRequest(String login, String password) {
         return AUTH_REQUEST + DELIMITER + login + DELIMITER + password;
@@ -52,7 +53,11 @@ public class Library {
         return TYPE_BCAST_CLIENT + DELIMITER + msg;
     }
 
-    public static String getTypePrivateClient(String recipient, String msg) {
-        return TYPE_PRIVATE_CLIENT + DELIMITER + recipient + DELIMITER + msg;
+    public static String getTypePrivateClient(String sender, String recipient, String msg) {
+        return TYPE_PRIVATE_CLIENT + DELIMITER + System.currentTimeMillis() + DELIMITER + sender + DELIMITER + recipient + DELIMITER + msg;
+    }
+
+    public static String getRecipientNotFoundError(String recipient) {
+        return RECIPIENT_NOT_FOUND_ERROR + DELIMITER + recipient;
     }
 }

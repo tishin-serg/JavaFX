@@ -30,7 +30,7 @@ public class SocketThread extends Thread implements Closeable {
                 listener.onReceiveString(this, socket, msg);
             }
         } catch (EOFException | SocketException e) {
-            //do nothing
+             e.printStackTrace();
         } catch (IOException e) {
             listener.onSocketException(this, e);
         } finally {
@@ -55,6 +55,7 @@ public class SocketThread extends Thread implements Closeable {
         }
     }
 
+    @Override
     public synchronized void close() {
         interrupt();
         listener.onSocketStop(this);

@@ -1,5 +1,7 @@
 package ru.geekbrains.java_two.chat.client;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -25,6 +27,7 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
 
     private final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
     private SocketThread socketThread;
+    private String nickname;
 
     @FXML
     private GridPane topPanel;
@@ -60,6 +63,20 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
         }
     }
 
+    @Override
+    public void handle(ActionEvent event) {
+        Object src = event.getSource();
+        if (src.equals(btnSend)) {
+            sendMessage();
+        } else if (src.equals(btnLogin)) {
+            connect();
+        } else if (src.equals(btnDisconnect)) {
+            disconnect();
+        } else {
+            throw new RuntimeException("Unexpected source: " + src);
+        }
+    }
+
     @FXML
     private void setAlwaysOnTop(ActionEvent event) {
         if (cbAlwaysOnTop.isSelected()) {
@@ -78,34 +95,25 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
         fileWriter.flush();
     }
 
-    @Override
-    public void handle(ActionEvent event) {
-        Object src = event.getSource();
-        if (src.equals(btnSend)) {
-            sendMessage();
-        } else if (src.equals(btnLogin)) {
-            connect();
-        } else if (src.equals(btnDisconnect)) {
-            disconnect();
-        } else {
-            throw new RuntimeException("Unexpected source: " + src);
-        }
-    }
-
     private void sendMessage() {
-
         String msg = tfMessage.getText();
         if ("".equals(msg)) return;
         tfMessage.clear();
 
+        // запилить приват мод и глобал мод
+
         String[] msgForSplit = msg.split(" ");
         String prefix = msgForSplit[0];
 
+
         switch (prefix) {
             case Library.TYPE_PRIVATE_CLIENT:
+                String sender = nickname;
                 String recipient = msgForSplit[1];
-                String message = msg.substring(Library.TYPE_PRIVATE_CLIENT.length() + recipient.length() + 2);
-                socketThread.sendMessage(Library.getTypePrivateClient(recipient, message));
+                String message =
+                        msg.substring(Library.TYPE_PRIVATE_CLIENT.length() +
+                                Library.DELIMITER.length() + recipient.length() + Library.DELIMITER.length());
+                socketThread.sendMessage(Library.getTypePrivateClient(sender, recipient, message));
                 break;
             default:
                 socketThread.sendMessage(Library.getTypeClientBcast(msg));
@@ -169,6 +177,7 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
         String prefix = msgForSplit[0];
         switch (prefix) {
             case Library.AUTH_ACCEPT:
+                nickname = msgForSplit[1];
                 putLog("Welcome! Your nick is " + msgForSplit[1]);
                 break;
             case Library.AUTH_DENIED:
@@ -185,17 +194,36 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
                 putLog(msg);
                 break;
             case Library.TYPE_PRIVATE_CLIENT:
-                putLog(msg);
+                putLog(DATE_FORMAT.format(Long.parseLong(msgForSplit[1])) + msgForSplit[2] + " to " + msgForSplit[3] +
+                        ": " + msgForSplit[4]);
                 break;
             case Library.USER_LIST:
                 msg = msg.substring(Library.USER_LIST.length() + Library.DELIMITER.length());
                 String[] usersArray = msg.split(Library.DELIMITER);
                 Arrays.sort(usersArray);
                 userListView.getItems().setAll(usersArray);
+                selectionListener(userListView);
+                break;
+            case Library.RECIPIENT_NOT_FOUND_ERROR:
+                msg = msg.substring(Library.RECIPIENT_NOT_FOUND_ERROR.length() + Library.DELIMITER.length());
+                putLog("Recipient " + msg + " was not found" );
                 break;
             default:
                 throw new RuntimeException("Unknown message type: " + msg);
         }
+    }
+
+    private void selectionListener(ListView<String> userListView) {
+        MultipleSelectionModel<String> selectionModel = userListView.getSelectionModel();
+        selectionModel.selectedItemProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observableValue, String s, String t1) {
+                String prefix = "/client_private " + t1 + " ";
+                if (!t1.equals(nickname) && !tfMessage.getText().startsWith(prefix)) {
+                    tfMessage.insertText(0, prefix);
+                }
+            }
+        });
     }
 
 }
