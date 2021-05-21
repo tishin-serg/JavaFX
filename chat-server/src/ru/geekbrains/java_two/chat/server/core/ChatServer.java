@@ -81,6 +81,17 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                 String sender = client.getNickname();
                 sendToPerson(Library.getTypePrivateClient(sender, recipient, message), client, recipient); // отправка получателю
                 break;
+            case Library.CLIENT_CHANGE_NICK:
+                //return CLIENT_CHANGE_NICK + DELIMITER + nick + DELIMITER + login;
+                if(!client.isAuthorized()) return;
+                String nicknameOld = client.getNickname();
+                String nicknameNew = msgForSplit[1];
+                String login = msgForSplit[2];
+                SqlClient.setNickname(nicknameNew, login);
+                client.changeNick(nicknameNew);
+                sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", nicknameOld + " changed nick to " + client.getNickname()));
+                sendToAllAuthorizedClients(Library.getUserList(getUsers()));
+                break;
             default:
                 client.msgFormatError(msg);
         }
@@ -102,7 +113,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                     ClientThread oldClient = findClientByNickname(nickname);
                     client.authAccept(nickname);
                     if (oldClient == null) {
-                        sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", nickname + " connected"));
+                        sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", client.getNickname() + " connected"));
                     } else {
                         oldClient.reconnect();
                         clients.remove(oldClient);

@@ -11,6 +11,7 @@ public class Library {
     /user_list±user1±user2
     /client_bcast±msg
     /client_private±recipient±msg
+    /client_change_nick±nick
 
     */
 
@@ -26,6 +27,7 @@ public class Library {
     public static final String RECIPIENT_NOT_FOUND_ERROR = "/recipient_not_found_error";
     public static final String LOGIN_AS_GUEST = "/login_as_guest";
     public static final String DISCONNECT_ON_TIMEOUT = "/disconnect_on_timeout";
+    public static final String CLIENT_CHANGE_NICK = "/client_change_nick";
 
     public static String getAuthRequest(String login, String password) {
         return AUTH_REQUEST + DELIMITER + login + DELIMITER + password;
@@ -69,5 +71,9 @@ public class Library {
 
     public static String getDisconnectOnTimeout() {
         return DISCONNECT_ON_TIMEOUT + DELIMITER + System.currentTimeMillis();
+    }
+
+    public static String getClientChangeNick(String nick, String login) {
+        return CLIENT_CHANGE_NICK + DELIMITER + nick + DELIMITER + login;
     }
 }

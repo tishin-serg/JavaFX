@@ -8,11 +8,11 @@ import java.net.Socket;
 
 public class ClientThread extends SocketThread {
 
+    private final long timeAfterThreadStarted;
     private String nickname;
     private boolean isAuthorized;
     private boolean isReconnecting;
     private boolean isLoginAsGuest;
-    private final long timeAfterThreadStarted;
 
     public ClientThread(String name, SocketThreadListener listener, Socket socket) {
         super(name, listener, socket);
@@ -41,6 +41,10 @@ public class ClientThread extends SocketThread {
         isAuthorized = true;
         this.nickname = nickname;
         sendMessage(Library.getAuthAccept(nickname)); //отправляем сообщение на клиентскую сторону об авторизации
+    }
+
+    void changeNick(String nickname) {
+        this.nickname = nickname;
     }
 
     void authFail() {

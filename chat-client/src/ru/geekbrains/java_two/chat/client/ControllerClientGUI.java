@@ -1,5 +1,6 @@
 package ru.geekbrains.java_two.chat.client;
 
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -57,6 +58,10 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
     private Button btnSend;
     @FXML
     private ListView<String> userListView;
+    @FXML
+    private Button btnChangeNickname;
+    @FXML
+    private TextField tfChangeNickname;
 
     @FXML
     private void sendMessageByEnter(KeyEvent keyEvent) {
@@ -74,9 +79,17 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
             connect();
         } else if (src.equals(btnDisconnect)) {
             disconnect();
+        } else if (src.equals(btnChangeNickname)) {
+            changeNickname();
         } else {
             throw new RuntimeException("Unexpected source: " + src);
         }
+    }
+
+    @FXML
+    private void changeNickname() {
+        if (tfChangeNickname.getText().equals("")) return;
+        socketThread.sendMessage(Library.getClientChangeNick(tfChangeNickname.getText(), tfLogin.getText()));
     }
 
     @FXML
@@ -106,7 +119,6 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
 
         String[] msgForSplit = msg.split(" ");
         String prefix = msgForSplit[0];
-
 
         switch (prefix) {
             case Library.TYPE_PRIVATE_CLIENT:
@@ -150,8 +162,13 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
 
     @Override
     public void onSocketStop(SocketThread thread) {
-        topPanel.setVisible(true);
-        bottomPanel.setVisible(false);
+        btnLogin.setDisable(false);
+        btnDisconnect.setDisable(true);
+        btnSend.setDisable(true);
+        btnChangeNickname.setDisable(true);
+        tfMessage.setDisable(true);
+        tfChangeNickname.setDisable(true);
+        cbLoginAsGuest.setDisable(false);
         userListView.getItems().clear();
     }
 
@@ -159,8 +176,13 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
     public void onSocketReady(SocketThread thread, Socket socket) {
         String login = tfLogin.getText();
         String password = tfPassword.getText();
-        topPanel.setVisible(false);
-        bottomPanel.setVisible(true);
+        btnLogin.setDisable(true);
+        btnDisconnect.setDisable(false);
+        btnSend.setDisable(false);
+        btnChangeNickname.setDisable(false);
+        tfMessage.setDisable(false);
+        tfChangeNickname.setDisable(false);
+        cbLoginAsGuest.setDisable(false);
         if (!cbLoginAsGuest.isSelected()) {
             thread.sendMessage(Library.getAuthRequest(login, password)); // запрос авторизации на сервер
         } else {
@@ -195,6 +217,7 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
                 socketThread.close();
                 break;
             case Library.TYPE_BROADCAST:
+                //return TYPE_BROADCAST + DELIMITER + System.currentTimeMillis() + DELIMITER + src + DELIMITER + msg;
                 putLog(DATE_FORMAT.format(Long.parseLong(msgForSplit[1])) + msgForSplit[2] + ": " + msgForSplit[3]);
                 break;
             case Library.TYPE_BCAST_CLIENT:
@@ -205,10 +228,7 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
                         ": " + msgForSplit[4]);
                 break;
             case Library.USER_LIST:
-                msg = msg.substring(Library.USER_LIST.length() + Library.DELIMITER.length());
-                String[] usersArray = msg.split(Library.DELIMITER);
-                Arrays.sort(usersArray);
-                userListView.getItems().setAll(usersArray);
+                updateUserList(msg);
                 selectionListener(userListView);
                 break;
             case Library.RECIPIENT_NOT_FOUND_ERROR:
@@ -240,5 +260,18 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
             }
         });
     }
+
+    private void updateUserList(String msg) {
+        msg = msg.substring(Library.USER_LIST.length() + Library.DELIMITER.length());
+        String[] usersArray = msg.split(Library.DELIMITER);
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                Arrays.sort(usersArray);
+                userListView.getItems().setAll(usersArray);
+            }
+        });
+    }
+
 
 }

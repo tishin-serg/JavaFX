@@ -29,6 +29,18 @@ public class SqlClient {
         return null;
     }
 
+    synchronized static void setNickname(String nicknameNew, String login) {
+        String query = "UPDATE clients SET nickname = ? WHERE login = ?";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, nicknameNew);
+            pstmt.setString(2, login);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     synchronized static void disconnect() {
         try {
             connection.close();
