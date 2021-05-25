@@ -83,10 +83,14 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                 break;
             case Library.CLIENT_CHANGE_NICK:
                 //return CLIENT_CHANGE_NICK + DELIMITER + nick + DELIMITER + login;
-                if(!client.isAuthorized()) return;
+                if (!client.isAuthorized()) return;
                 String nicknameOld = client.getNickname();
                 String nicknameNew = msgForSplit[1];
                 String login = msgForSplit[2];
+                if (findClientByNickname(nicknameNew) != null) {
+                    client.sendMessage("Server: Nickname haven't changed. " + nicknameNew + " is exist.");
+                    return;
+                }
                 SqlClient.setNickname(nicknameNew, login);
                 client.changeNick(nicknameNew);
                 sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", nicknameOld + " changed nick to " + client.getNickname()));

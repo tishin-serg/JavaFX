@@ -58,12 +58,13 @@ public class SocketThread extends Thread implements Closeable {
     @Override
     public synchronized void close() {
         interrupt();
-        listener.onSocketStop(this);
         try {
             in.close();
             socket.close();
         } catch (IOException e) {
             listener.onSocketException(this, e);
+            System.out.println("exception");
         }
+        listener.onSocketStop(this);
     }
 }
