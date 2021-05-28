@@ -6,6 +6,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -16,20 +17,22 @@ import ru.geekbrains.java_two.chat.common.Library;
 import ru.geekbrains.java_two.network.SocketThread;
 import ru.geekbrains.java_two.network.SocketThreadListener;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.ResourceBundle;
 
-public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThreadListener {
+public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThreadListener, Initializable {
 
     private final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
+    private final int MESSAGES_COUNT_IN_LOG = 3;  //количество строк загружаемое из лога
     private SocketThread socketThread;
     private String nickname;
-
+    private File messageHistory = new File("/Users/mac/IdeaProjects/HelloJavaFX/chat-client/src/ru/geekbrains/java_two/chat/client" +
+            "/resources/LogMessage.txt");
     @FXML
     private GridPane topPanel;
     @FXML
@@ -105,13 +108,6 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
         }
     }
 
-    public void writeInLog() throws IOException {
-        File file1 = new File("/Users/mac/IdeaProjects/HelloJavaFX/src/chat_v2/resources/LogMessage.txt");
-        FileWriter fileWriter = new FileWriter(file1, false);
-        fileWriter.write(taMessageLog.getText());
-        fileWriter.flush();
-    }
-
     private void sendMessage() {
         String msg = tfMessage.getText();
         if ("".equals(msg)) return;
@@ -183,7 +179,7 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
 
     @Override
     public void onSocketReady(SocketThread thread, Socket socket) {
-        if (tfLogin.getText().isEmpty()) {
+        /*if (tfLogin.getText().isEmpty()) {
             showErrorAlert("Login field can't be empty");
             try {
                 thread.close();
@@ -192,7 +188,7 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
                 e.printStackTrace();
             }
             return;
-        }
+        }*/
         String login = tfLogin.getText();
         String password = tfPassword.getText();
         btnLogin.setDisable(true);
@@ -236,14 +232,17 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
                 socketThread.close();
                 break;
             case Library.TYPE_BROADCAST:
-                //return TYPE_BROADCAST + DELIMITER + System.currentTimeMillis() + DELIMITER + src + DELIMITER + msg;
                 putLog(DATE_FORMAT.format(Long.parseLong(msgForSplit[1])) + msgForSplit[2] + ": " + msgForSplit[3]);
+                writeInLog(DATE_FORMAT.format(Long.parseLong(msgForSplit[1])) + msgForSplit[2] + ": " + msgForSplit[3]);
                 break;
             case Library.TYPE_BCAST_CLIENT:
                 putLog(msg);
+                writeInLog(msg);
                 break;
             case Library.TYPE_PRIVATE_CLIENT:
                 putLog(DATE_FORMAT.format(Long.parseLong(msgForSplit[1])) + msgForSplit[2] + " to " + msgForSplit[3] +
+                        ": " + msgForSplit[4]);
+                writeInLog(DATE_FORMAT.format(Long.parseLong(msgForSplit[1])) + msgForSplit[2] + " to " + msgForSplit[3] +
                         ": " + msgForSplit[4]);
                 break;
             case Library.USER_LIST:
@@ -288,18 +287,6 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
         });
     }
 
-    /*private void updateUserList(String msg) {
-        msg = msg.substring(Library.USER_LIST.length() + Library.DELIMITER.length());
-        String[] usersArray = msg.split(Library.DELIMITER);
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                Arrays.sort(usersArray);
-                userListView.getItems().setAll(usersArray);
-            }
-        });
-    }*/
-
     private void showErrorAlert(String msg) {
         Platform.runLater(new Runnable() {
             @Override
@@ -312,5 +299,47 @@ public class ControllerClientGUI implements EventHandler<ActionEvent>, SocketThr
         });
     }
 
+    //пока не разобрался как сделать путь к файлу универсальным для каждого, кто компилит приложение у себя
+    public void writeInLog(String msg) {
+        try (FileWriter fileWriter = new FileWriter(messageHistory, true)) {
+            fileWriter.write(msg + "\n");
+            fileWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showErrorAlert("Message haven't write in local log");
+        }
+    }
+
+    public void readFromLog() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(messageHistory))) {
+            int count = countOfFileLines(messageHistory); // кладем в переменную количество строк в файле
+            String str;
+            int counter = 0;
+            while ((str = reader.readLine()) != null) {
+                counter++;                                // увеличиваем счётчик после каждой строки в файле
+                if (counter > count - MESSAGES_COUNT_IN_LOG) {  // когда до конца остаётся 100 строк, пишем их в лог
+                    taMessageLog.appendText(str + "\n");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showErrorAlert("Can't load chat history");
+        }
+    }
+
+    //метод подсчёта количество строк в логе
+    private int countOfFileLines(File file) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(file));
+        LineNumberReader count = new LineNumberReader(reader);
+        while (count.skip(Long.MAX_VALUE) > 0) { }
+        reader.close();
+        count.close();
+        return count.getLineNumber() + 1; //считаем общее количество строк в файле
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        readFromLog();
+    }
 
 }
